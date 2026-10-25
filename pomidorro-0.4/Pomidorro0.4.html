@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Помидор">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Помидор</title>
+<style>
+  :root{
+    --bg:#f5f5f7;--card:#fff;--text:#1c1c1e;--muted:#8e8e93;--muted2:#a0a0a8;
+    --border:#f2f2f6;--track:#e6e6ec;--btn-bg:#fff;--btn-shadow:0 1px 3px rgba(0,0,0,.07);
+    --modes-bg:#e9e9ee;--modes-active:#fff;--input-bg:#f7f7f9;--input-border:#e5e5ea;
+    --tab-bg:rgba(255,255,255,.92);--tab-border:#e5e5ea;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#000;--card:#1c1c1e;--text:#f5f5f7;--muted:#98989d;--muted2:#8e8e93;
+      --border:#2c2c2e;--track:#2c2c2e;--btn-bg:#1c1c1e;--btn-shadow:none;
+      --modes-bg:#1c1c1e;--modes-active:#2c2c2e;--input-bg:#1c1c1e;--input-border:#2c2c2e;
+      --tab-bg:rgba(28,28,30,.92);--tab-border:#2c2c2e;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;
+    overscroll-behavior:none;-webkit-font-smoothing:antialiased;
+  }
+  body[data-mode="work"]{--accent:#e0533d;--soft:#fdeeeb}
+  body[data-mode="short"]{--accent:#2f9e6e;--soft:#e9f7f0}
+  body[data-mode="long"]{--accent:#3b7dd8;--soft:#eaf1fc}
+  @media (prefers-color-scheme: dark){
+    body[data-mode="work"]{--accent:#ff6b52;--soft:#3a1a14}
+    body[data-mode="short"]{--accent:#4fd49b;--soft:#14301f}
+    body[data-mode="long"]{--accent:#6ba6ff;--soft:#1a2438}
+  }
+  .app{
+    max-width:440px;margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 14px)
+            calc(env(safe-area-inset-bottom) + 82px) calc(env(safe-area-inset-left) + 14px);
+  }
+  .page[hidden]{display:none}
+  header{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 8px}
+  h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.3px}
+  .icon{background:transparent;box-shadow:none;font-size:20px;padding:8px;color:var(--muted)}
+
+  button{
+    font-family:inherit;font-size:16px;border:none;border-radius:14px;padding:15px 12px;
+    background:var(--btn-bg);color:var(--text);cursor:pointer;box-shadow:var(--btn-shadow);
+    transition:transform .08s ease, background .2s;
+  }
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.4;cursor:default}
+  .primary{background:var(--accent);color:#fff;font-weight:600}
+
+  .modes{display:flex;background:var(--modes-bg);border-radius:12px;padding:4px;gap:4px;margin-top:8px}
+  .modes button{
+    flex:1;padding:9px 4px;font-size:13.5px;border-radius:9px;
+    background:transparent;color:var(--muted);box-shadow:none;font-weight:500;
+  }
+  .modes button.active{background:var(--modes-active);color:var(--accent);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+  .timer{position:relative;width:min(280px,74vw);aspect-ratio:1;margin:14px auto 0}
+  .timer svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+  .track{fill:none;stroke:var(--track);stroke-width:9}
+  .progress{
+    fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;
+    transition:stroke-dashoffset .25s linear, stroke .3s ease;
+  }
+  .progress.pulse{animation:pulseRing 1s ease-in-out infinite}
+  @keyframes pulseRing{
+    0%,100%{opacity:1}
+    50%{opacity:.55}
+  }
+  .timer-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .time{font-size:clamp(58px,17vw,76px);font-weight:600;letter-spacing:-3px;font-variant-numeric:tabular-nums;line-height:1}
+  .label{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+  .controls{display:flex;gap:9px;margin-top:18px}
+  .controls button{flex:1}
+  .controls .primary{flex:1.5}
+
+  .stats{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;
+         font-size:13px;color:var(--muted);margin-top:12px;padding:0 4px;font-variant-numeric:tabular-nums}
+  .stats b{color:var(--text);font-weight:600}
+
+  .card{background:var(--card);border-radius:16px;padding:14px;margin-top:14px;box-shadow:var(--btn-shadow)}
+  .card h2{font-size:11.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);
+           margin:0 0 10px;font-weight:600}
+
+  .add-row{display:flex;gap:8px}
+  input[type=text],input[type=number]{
+    font-family:inherit;font-size:16px;border:1px solid var(--input-border);background:var(--input-bg);
+    border-radius:12px;padding:12px;color:var(--text);outline:none;
+  }
+  input[type=text]{flex:1;min-width:0}
+  input[type=text]:focus{border-color:var(--accent)}
+  #btnAdd{width:48px;flex:none;font-size:22px;font-weight:400;background:var(--accent);color:#fff;padding:0}
+
+  #taskList{list-style:none;padding:0;margin:4px 0 0}
+  #taskList li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--border)}
+  #taskList li:first-child{border-top:none}
+  #taskList input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--accent);margin:0}
+  .text{flex:1;font-size:15px;line-height:1.35;word-break:break-word}
+  li.done .text{text-decoration:line-through;color:var(--muted2)}
+  li.active .text{font-weight:600;color:var(--accent)}
+  .pomos{font-size:12px;color:var(--muted);flex:none}
+  .del{background:transparent;box-shadow:none;color:var(--muted2);font-size:22px;line-height:1;padding:0 4px;flex:none}
+
+  .settings label{display:flex;align-items:center;justify-content:space-between;
+                  padding:11px 0;border-top:1px solid var(--border);font-size:15px}
+  .settings label:first-of-type{border-top:none}
+  .settings input[type=number]{width:78px;text-align:center;padding:8px}
+  .settings input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent)}
+  .hint{font-size:12.5px;color:var(--muted2);line-height:1.45;margin-top:6px}
+
+  /* ---- track library ---- */
+  .track-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border)}
+  .track-row:first-child{border-top:none}
+  .track-row .track-name{flex:1;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .track-row .track-name.playing{color:var(--accent);font-weight:600}
+  .track-row .track-size{font-size:12px;color:var(--muted2);flex:none}
+  .track-row button{flex:none;padding:8px 10px;font-size:14px;border-radius:10px}
+  .track-row .track-play{min-width:42px}
+  .track-row .track-del{color:var(--muted2);background:transparent;box-shadow:none;font-size:20px;padding:0 6px}
+
+  .noise-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .noise-grid button{padding:14px 8px;font-size:14px}
+  .noise-grid button.active{background:var(--accent);color:#fff;font-weight:600}
+
+  .audio-controls{display:flex;gap:8px;align-items:center;margin-top:6px}
+  .audio-controls #btnAudioPlay{flex:none;width:56px;font-size:20px}
+  .audio-controls .info{flex:1;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .audio-volume{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--muted);font-size:15px}
+  .audio-volume input[type=range]{flex:1;accent-color:var(--accent)}
+
+  /* ---- tabbar ---- */
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:50;
+    background:var(--tab-bg);backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid var(--tab-border);
+    display:flex;justify-content:space-around;
+    padding:6px calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 6px) calc(env(safe-area-inset-left) + 8px);
+  }
+  .tabbar button{
+    flex:1;background:transparent;box-shadow:none;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:6px 4px;font-size:11px;border-radius:8px;
+  }
+  .tabbar button .ico{font-size:20px;line-height:1}
+  .tabbar button.active{color:var(--accent)}
+
+  /* ---- focus overlay ---- */
+  .focus-overlay{
+    position:fixed;inset:0;z-index:100;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:calc(env(safe-area-inset-top) + 20px) calc(env(safe-area-inset-right) + 20px)
+            calc(env(safe-area-inset-bottom) + 20px) calc(env(safe-area-inset-left) + 20px);
+    cursor:pointer;
+  }
+  .focus-overlay[hidden]{display:none}
+  .focus-exit{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 14px);
+    background:transparent;box-shadow:none;color:var(--muted);font-size:26px;padding:8px}
+  .focus-task{font-size:15px;color:var(--muted);margin-top:22px;max-width:88vw;text-align:center;
+    font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .focus-task.active{color:var(--accent);font-weight:600}
+  .focus-overlay .timer{margin-top:14px}
+  .focus-overlay .controls{margin-top:30px;width:min(340px,90vw)}
+</style>
+</head>
+<body data-mode="work">
+<div class="app">
+
+  <!-- ============= PAGE: TIMER ============= -->
+  <section class="page" data-page="timer">
+    <header>
+      <h1>Помидор</h1>
+      <button class="icon" id="btnFocus" aria-label="Режим фокуса">⤢</button>
+    </header>
+
+    <div class="modes" id="modes">
+      <button data-mode="work" class="active">Работа</button>
+      <button data-mode="short">Перерыв</button>
+      <button data-mode="long">Отдых</button>
+    </div>
+
+    <div class="timer">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="track" cx="100" cy="100" r="90"></circle>
+        <circle class="progress" id="ring" cx="100" cy="100" r="90"></circle>
+      </svg>
+      <div class="timer-center">
+        <div class="time" id="time">25:00</div>
+        <div class="label" id="modeLabel">Работа</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btnReset">Сброс</button>
+      <button id="btnStart" class="primary">Старт</button>
+      <button id="btnSkip">Дальше</button>
+    </div>
+
+    <div class="stats">
+      <span>🍅 <b id="count">0</b></span>
+      <span>⏱ <b id="focusTime">0 мин</b></span>
+      <span>До длинного: <b id="toLong">4</b></span>
+    </div>
+
+    <section class="card">
+      <h2>Задачи</h2>
+      <div class="add-row">
+        <input id="taskInput" type="text" placeholder="Что делаем?" maxlength="90"
+               autocomplete="off" autocapitalize="sentences" enterkeyhint="done">
+        <button id="btnAdd" aria-label="Добавить">+</button>
+      </div>
+      <ul id="taskList"></ul>
+    </section>
+  </section>
+
+  <!-- ============= PAGE: SOUND ============= -->
+  <section class="page" data-page="sound" hidden>
+    <header>
+      <h1>Звук</h1>
+    </header>
+
+    <section class="card">
+      <h2>Сейчас</h2>
+      <div class="audio-controls">
+        <button id="btnAudioPlay" class="primary" disabled aria-label="Воспроизвести">▶︎</button>
+        <span class="info" id="nowPlaying">Ничего не выбрано</span>
+      </div>
+      <div class="audio-volume">
+        <span>🔈</span>
+        <input type="range" id="audioVolume" min="0" max="100" value="50">
+        <span>🔊</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Мои треки</h2>
+      <div id="tracksList"></div>
+      <button id="btnAddTrack" style="width:100%;margin-top:10px">+ Добавить трек</button>
+      <input type="file" id="trackFile" accept="audio/*,audio/mp4,audio/x-m4a,.m4a,.mp3,audio/mpeg,video/mp4" multiple hidden>
+    </section>
+
+    <section class="card">
+      <h2>Генераторы шума</h2>
+      <div class="noise-grid">
+        <button data-noise="rain">🌧 Дождь</button>
+        <button data-noise="white">⚪ Белый шум</button>
+        <button data-noise="brown">🟤 Коричневый</button>
+        <button data-noise="tick">⏱ Тиканье</button>
+      </div>
+    </section>
+  </section>
+
+  <!-- ============= PAGE: SETTINGS ============= -->
+  <section class="page" data-page="settings" hidden>
+    <header>
+      <h1>Настройки</h1>
+    </header>
+
+    <section class="card settings">
+      <h2>Таймер</h2>
+      <label>Работа, мин <input type="number" id="setWork" min="1" max="180" inputmode="numeric"></label>
+      <label>Короткий перерыв, мин <input type="number" id="setShort" min="1" max="60" inputmode="numeric"></label>
+      <label>Длинный перерыв, мин <input type="number" id="setLong" min="1" max="120" inputmode="numeric"></label>
+      <label>Длинный каждые <input type="number" id="setEvery" min="2" max="12" inputmode="numeric"></label>
+      <label>Автостарт следующего <input type="checkbox" id="setAutoStart"></label>
+    </section>
+
+    <section class="card settings">
+      <h2>Сигналы</h2>
+      <label>Звук сигнала <input type="checkbox" id="setSound"></label>
+      <label>Уведомления <input type="checkbox" id="setNotify"></label>
+      <p class="hint">Уведомления в Safari работают только если добавить сайт на экран «Домой» (iOS 16.4+).</p>
+    </section>
+
+    <section class="card settings">
+      <h2>Данные</h2>
+      <label>Сбросить статистику <button id="btnResetStats" style="padding:10px 16px;font-size:14px">Сбросить</button></label>
+    </section>
+  </section>
+
+  <nav class="tabbar">
+    <button data-page="timer" class="active"><span class="ico">⏱</span>Таймер</button>
+    <button data-page="sound"><span class="ico">🎵</span>Звук</button>
+    <button data-page="settings"><span class="ico">⚙</span>Настройки</button>
+  </nav>
+</div>
+
+<!-- ============= FOCUS OVERLAY ============= -->
+<div class="focus-overlay" id="focusOverlay" hidden>
+  <button class="focus-exit" id="btnFocusExit" aria-label="Выйти из фокуса">×</button>
+  <div class="timer">
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <circle class="track" cx="100" cy="100" r="90"></circle>
+      <circle class="progress" id="ringFocus" cx="100" cy="100" r="90"></circle>
+    </svg>
+    <div class="timer-center">
+      <div class="time" id="timeFocus">25:00</div>
+      <div class="label" id="modeLabelFocus">Работа</div>
+    </div>
+  </div>
+  <div class="focus-task" id="focusTask"></div>
+  <div class="controls">
+    <button id="btnResetFocus">Сброс</button>
+    <button id="btnStartFocus" class="primary">Старт</button>
+    <button id="btnSkipFocus">Дальше</button>
+  </div>
+</div>
+
+<audio id="bgAudio" loop preload="auto" playsinline></audio>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================== хранилище ===================== */
+  const KEY = { settings:'pomo.settings.v1', tasks:'pomo.tasks.v1', stats:'pomo.stats.v1',
+                audioSource:'pomo.audioSource.v1', volume:'pomo.volume.v1' };
+
+  function load(key, fb) {
+    try { const r = localStorage.getItem(key); if (!r) return fb;
+      const v = JSON.parse(r); return (v && typeof v === 'object') ? v : fb;
+    } catch (e) { return fb; }
+  }
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+  function todayStr() { const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+
+  const DEFAULTS = { work:25, short:5, long:15, every:4, sound:true, notify:true, autoStart:false };
+
+  let settings = Object.assign({}, DEFAULTS, load(KEY.settings, {}));
+  let tasks    = Array.isArray(load(KEY.tasks, [])) ? load(KEY.tasks, []) : [];
+  let stats    = load(KEY.stats, { date: todayStr(), count: 0, minutes: 0 });
+  if (stats.date !== todayStr()) stats = { date: todayStr(), count: 0, minutes: 0 };
+  if (typeof stats.minutes !== 'number') stats.minutes = (stats.count||0) * settings.work;
+
+  /* ===================== состояние таймера ===================== */
+  let mode = 'work';
+  let running = false;
+  let total = settings.work * 60;
+  let remaining = total;
+  let endAt = 0;
+  let ticker = null;
+  let cycle = 0;
+  let activeTaskId = null;
+  let audioCtx = null;
+
+  const DUR = { work: () => settings.work*60, short: () => settings.short*60, long: () => settings.long*60 };
+  const LABEL = { work:'Работа', short:'Перерыв', long:'Отдых' };
+
+  /* ===================== DOM ===================== */
+  const $ = id => document.getElementById(id);
+  const timeEl = $('time'), labelEl = $('modeLabel'), ring = $('ring');
+  const timeFocus = $('timeFocus'), labelFocus = $('modeLabelFocus'), ringFocus = $('ringFocus');
+  const btnStart = $('btnStart'), btnReset = $('btnReset'), btnSkip = $('btnSkip');
+  const btnStartFocus = $('btnStartFocus'), btnResetFocus = $('btnResetFocus'), btnSkipFocus = $('btnSkipFocus');
+  const countEl = $('count'), toLongEl = $('toLong'), focusTimeEl = $('focusTime');
+  const taskInput = $('taskInput'), taskList = $('taskList');
+  const focusOverlay = $('focusOverlay'), focusTaskEl = $('focusTask');
+
+  const RING_C = 2 * Math.PI * 90;
+  ring.style.strokeDasharray = RING_C;
+  ringFocus.style.strokeDasharray = RING_C;
+
+  /* ===================== утилиты ===================== */
+  function fmt(sec) {
+    sec = Math.max(0, sec);
+    const m = Math.floor(sec/60), s = sec % 60;
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  function fmtMinutes(mins) {
+    mins = Math.max(0, Math.round(mins));
+    if (mins < 60) return mins + ' мин';
+    const h = Math.floor(mins/60), m = mins % 60;
+    return m === 0 ? h + ' ч' : h + ' ч ' + m + ' мин';
+  }
+
+  function getAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { audioCtx = new AC(); } catch (e) { return null; }
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function beep() {
+    if (!settings.sound) return;
+    const ctx = getAudio();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + 0.02;
+    [0, 0.22, 0.44].forEach(function (d) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, t0 + d);
+      g.gain.setValueAtTime(0.0001, t0 + d);
+      g.gain.exponentialRampToValueAtTime(0.22, t0 + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.18);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0 + d); o.stop(t0 + d + 0.2);
+    });
+  }
+
+  function askNotifyPermission() {
+    if (!settings.notify) return;
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch (e) {}
+    }
+  }
+
+  function notify(title, body) {
+    if (!settings.notify) return;
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    try { new Notification(title, { body: body, tag: 'pomo' }); } catch (e) {}
+  }
+
+  /* ===================== отрисовка таймера ===================== */
+  function render() {
+    const txt = fmt(remaining);
+    timeEl.textContent = txt;
+    timeFocus.textContent = txt;
+    labelEl.textContent = LABEL[mode];
+    labelFocus.textContent = LABEL[mode];
+
+    const ratio = total > 0 ? Math.min(1, Math.max(0, remaining/total)) : 0;
+    const off = RING_C * (1 - ratio);
+    ring.style.strokeDashoffset = off;
+    ringFocus.style.strokeDashoffset = off;
+
+    const pulse = running && remaining <= 10 && remaining > 0;
+    ring.classList.toggle('pulse', pulse);
+    ringFocus.classList.toggle('pulse', pulse);
+
+    document.title = running ? (txt + ' · ' + LABEL[mode]) : 'Помидор';
+
+    const activeTask = tasks.find(t => t.id === activeTaskId);
+    if (activeTask) {
+      focusTaskEl.textContent = activeTask.text;
+      focusTaskEl.classList.toggle('active', true);
+    } else {
+      focusTaskEl.textContent = '';
+      focusTaskEl.classList.remove('active');
+    }
+  }
+
+  function updateStartBtn() {
+    const label = running ? 'Пауза' : 'Старт';
+    btnStart.textContent = label;
+    btnStartFocus.textContent = label;
+  }
+
+  function updateModes() {
+    document.querySelectorAll('#modes button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    document.body.dataset.mode = mode;
+  }
+
+  function updateStats() {
+    if (stats.date !== todayStr()) { stats = { date: todayStr(), count: 0, minutes: 0 }; save(KEY.stats, stats); }
+    countEl.textContent = stats.count;
+    focusTimeEl.textContent = fmtMinutes(stats.minutes);
+    toLongEl.textContent = Math.max(1, settings.every - (cycle % settings.every));
+  }
+
+  /* ===================== таймер ===================== */
+  function stopTicker() { if (ticker) { clearInterval(ticker); ticker = null; } }
+  function startTicker() { stopTicker(); ticker = setInterval(tick, 250); }
+
+  function tick() {
+    if (!running) return;
+    const left = Math.ceil((endAt - Date.now()) / 1000);
+    if (left <= 0) { remaining = 0; render(); finish(); return; }
+    if (left !== remaining) { remaining = left; render(); }
+  }
+
+  function setMode(m, skipStart) {
+    running = false; stopTicker();
+    mode = m; total = DUR[m](); remaining = total; endAt = 0;
+    updateModes(); updateStartBtn(); render(); updateStats();
+    if (!skipStart && settings.autoStart && m !== 'work') {
+      // не автостартим перерыв после того как мы вручную переключили режим
+    }
+  }
+
+  function start() {
+    if (running) return;
+    if (remaining <= 0) remaining = total;
+    endAt = Date.now() + remaining*1000;
+    running = true;
+    getAudio();               // разблокировка звука по жесту
+    askNotifyPermission();
+    startTicker(); updateStartBtn(); render();
+  }
+
+  function pause() {
+    if (!running) return;
+    remaining = Math.max(0, Math.ceil((endAt - Date.now())/1000));
+    running = false; stopTicker(); updateStartBtn(); render();
+  }
+
+  function reset() { setMode(mode, true); }
+
+  function finish() {
+    running = false; stopTicker(); beep();
+
+    if (mode === 'work') {
+      if (stats.date !== todayStr()) stats = { date: todayStr(), count: 0, minutes: 0 };
+      stats.count++;
+      stats.minutes = (stats.minutes || 0) + settings.work;
+      save(KEY.stats, stats);
+
+      if (activeTaskId) {
+        const t = tasks.find(x => x.id === activeTaskId);
+        if (t) { t.pomos = (t.pomos || 0) + 1; save(KEY.tasks, tasks); }
+      }
+
+      cycle++;
+      const next = (cycle % settings.every === 0) ? 'long' : 'short';
+      notify('Помидор завершён 🍅',
+             next === 'long' ? 'Время длинного перерыва — ' + settings.long + ' мин'
+                             : 'Отдохни ' + settings.short + ' мин');
+      setMode(next, true);
+    } else {
+      notify('Перерыв закончился', 'Возвращаемся к работе — ' + settings.work + ' мин');
+      setMode('work', true);
+    }
+
+    renderTasks();
+    if (settings.autoStart) start();
+  }
+
+  function skip() {
+    running = false; stopTicker();
+    if (mode === 'work') {
+      const next = ((cycle + 1) % settings.every === 0) ? 'long' : 'short';
+      setMode(next, true);
+    } else {
+      setMode('work', true);
+    }
+  }
+
+  /* ===================== задачи ===================== */
+  function saveTasks() { save(KEY.tasks, tasks); }
+
+  function addTask() {
+    const text = taskInput.value.trim();
+    if (!text) return;
+    tasks.push({
+      id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      text: text, done: false, pomos: 0
+    });
+    taskInput.value = '';
+    saveTasks(); renderTasks(); render();
+  }
+
+  function getNextUndoneTask(excludeId) {
+    return tasks.find(t => !t.done && t.id !== excludeId);
+  }
+
+  function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach(function (t) {
+      const li = document.createElement('li');
+      li.dataset.id = t.id;
+      if (t.done) li.classList.add('done');
+      if (t.id === activeTaskId) li.classList.add('active');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = !!t.done;
+
+      const span = document.createElement('span');
+      span.className = 'text'; span.textContent = t.text;
+
+      li.appendChild(cb); li.appendChild(span);
+
+      if (t.pomos) {
+        const p = document.createElement('span');
+        p.className = 'pomos'; p.textContent = '🍅'+t.pomos;
+        li.appendChild(p);
+      }
+
+      const del = document.createElement('button');
+      del.className = 'del'; del.textContent = '×';
+      del.setAttribute('aria-label', 'Удалить задачу');
+      li.appendChild(del);
+
+      taskList.appendChild(li);
+    });
+  }
+
+  taskList.addEventListener('click', function (e) {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    const id = li.dataset.id;
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+
+    if (e.target.classList.contains('del')) {
+      tasks = tasks.filter(x => x.id !== id);
+      if (activeTaskId === id) activeTaskId = null;
+      saveTasks(); renderTasks(); render(); return;
+    }
+    if (e.target.matches('input[type=checkbox]')) {
+      t.done = e.target.checked;
+      // авто-переход к следующей невыполненной
+      if (t.done && activeTaskId === id) {
+        const next = getNextUndoneTask(id);
+        activeTaskId = next ? next.id : null;
+      }
+      saveTasks(); renderTasks(); render(); return;
+    }
+    activeTaskId = (activeTaskId === id) ? null : id;
+    renderTasks(); render();
+  });
+
+  /* ===================== настройки ===================== */
+  function saveSettings() { save(KEY.settings, settings); }
+
+  function applySettings() {
+    if (!running) { total = DUR[mode](); remaining = total; }
+    render(); updateStats();
+  }
+
+  function bindNumber(id, key, min, max) {
+    const el = $(id);
+    el.value = settings[key];
+    el.addEventListener('change', function () {
+      let v = parseInt(el.value, 10);
+      if (isNaN(v)) v = DEFAULTS[key];
+      v = Math.min(max, Math.max(min, v));
+      el.value = v; settings[key] = v;
+      saveSettings(); applySettings();
+    });
+  }
+
+  function bindCheck(id, key) {
+    const el = $(id);
+    el.checked = !!settings[key];
+    el.addEventListener('change', function () {
+      settings[key] = el.checked;
+      saveSettings();
+      if (key === 'notify' && el.checked) askNotifyPermission();
+    });
+  }
+
+  bindNumber('setWork',  'work',  1, 180);
+  bindNumber('setShort', 'short', 1, 60);
+  bindNumber('setLong',  'long',  1, 120);
+  bindNumber('setEvery', 'every', 2, 12);
+  bindCheck('setSound',  'sound');
+  bindCheck('setNotify', 'notify');
+  bindCheck('setAutoStart', 'autoStart');
+
+  $('btnResetStats').addEventListener('click', function () {
+    if (confirm('Сбросить статистику сегодня?')) {
+      stats = { date: todayStr(), count: 0, minutes: 0 };
+      save(KEY.stats, stats);
+      cycle = 0;
+      updateStats();
+    }
+  });
+
+  /* ===================== tab bar ===================== */
+  document.querySelectorAll('.tabbar button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const page = b.dataset.page;
+      document.querySelectorAll('.tabbar button').forEach(x => x.classList.toggle('active', x === b));
+      document.querySelectorAll('.page').forEach(function (p) {
+        p.hidden = (p.dataset.page !== page);
+      });
+    });
+  });
+
+  /* ===================== кнопки таймера ===================== */
+  btnStart.addEventListener('click', () => running ? pause() : start());
+  btnReset.addEventListener('click', reset);
+  btnSkip.addEventListener('click', skip);
+  btnStartFocus.addEventListener('click', () => running ? pause() : start());
+  btnResetFocus.addEventListener('click', reset);
+  btnSkipFocus.addEventListener('click', skip);
+
+  document.querySelectorAll('#modes button').forEach(function (b) {
+    b.addEventListener('click', function () { setMode(b.dataset.mode, true); });
+  });
+
+  /* ===================== focus mode ===================== */
+  $('btnFocus').addEventListener('click', function () {
+    focusOverlay.hidden = false;
+    render();
+  });
+  $('btnFocusExit').addEventListener('click', function (e) {
+    e.stopPropagation();
+    focusOverlay.hidden = true;
+  });
+  focusOverlay.addEventListener('click', function (e) {
+    // тап вне кнопок и вне таймера — выход
+    if (e.target.closest('button') || e.target.closest('.timer') || e.target.closest('.controls')) return;
+    focusOverlay.hidden = true;
+  });
+
+  /* ===================== задачи - add ===================== */
+  $('btnAdd').addEventListener('click', addTask);
+  taskInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); addTask(); }
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && running) tick();
+  });
+  window.addEventListener('focus', function () { if (running) tick(); });
+
+  /* ============================================================
+     ЗВУК: треки (IndexedDB) + генераторы шума (Web Audio)
+     ============================================================ */
+  const DB_NAME = 'pomoDB';
+  const DB_VERSION = 2;
+  const DB_AUDIO = 'audio';       // старый store (для миграции)
+  const DB_TRACKS = 'tracks';     // новый store: { id -> {id, name, size, blob} }
+
+  const bgAudio = $('bgAudio');
+  const trackFileInput = $('trackFile');
+  const tracksListEl = $('tracksList');
+  const btnAddTrack = $('btnAddTrack');
+  const btnAudioPlay = $('btnAudioPlay');
+  const nowPlayingEl = $('nowPlaying');
+  const audioVolume = $('audioVolume');
+
+  // состояние звука
+  let tracks = [];                 // [{id, name, size}]
+  let trackUrls = {};              // id -> blob URL
+  let currentUrl = null;
+  let audioSource = load(KEY.audioSource, null); // {type:'file'|'noise', id?, name}
+  let isPlaying = false;
+  let noiseSource = null;
+  let noiseGain = null;
+  let tickTimer = null;
+  let noiseType = null;
+
+  let savedVol = parseFloat(localStorage.getItem(KEY.volume) || '0.5');
+  if (isNaN(savedVol)) savedVol = 0.5;
+  let volume = Math.min(1, Math.max(0, savedVol));
+  bgAudio.volume = volume;
+  audioVolume.value = String(Math.round(volume * 100));
+
+  /* ---- IndexedDB ---- */
+  function openDB() {
+    return new Promise(function (resolve, reject) {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function (e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(DB_AUDIO)) db.createObjectStore(DB_AUDIO);
+        if (!db.objectStoreNames.contains(DB_TRACKS)) db.createObjectStore(DB_TRACKS, { keyPath: 'id' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGetAudio(key) {
+    const db = await openDB();
+    return new Promise(function (res, rej) {
+      const r = db.transaction(DB_AUDIO, 'readonly').objectStore(DB_AUDIO).get(key);
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbDelAudio(key) {
+    const db = await openDB();
+    return new Promise(function (res, rej) {
+      const r = db.transaction(DB_AUDIO, 'readwrite').objectStore(DB_AUDIO).delete(key);
+      r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbAllTracks() {
+    const db = await openDB();
+    return new Promise(function (res, rej) {
+      const r = db.transaction(DB_TRACKS, 'readonly').objectStore(DB_TRACKS).getAll();
+      r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbGetTrack(id) {
+    const db = await openDB();
+    return new Promise(function (res, rej) {
+      const r = db.transaction(DB_TRACKS, 'readonly').objectStore(DB_TRACKS).get(id);
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbPutTrack(t) {
+    const db = await openDB();
+    return new Promise(function (res, rej) {
+      const r = db.transaction(DB_TRACKS, 'readwrite').objectStore(DB_TRACKS).put(t);
+      r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbDelTrack(id) {
+    const db = await openDB();
+    return new Promise(function (res, rej) {
+      const r = db.transaction(DB_TRACKS, 'readwrite').objectStore(DB_TRACKS).delete(id);
+      r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+    });
+  }
+
+  /* ---- миграция старого формата ---- */
+  async function migrateOldAudio() {
+    try {
+      const oldBlob = await idbGetAudio('background');
+      if (oldBlob) {
+        const id = 't_' + Date.now().toString(36);
+        const name = localStorage.getItem('pomo.audioName') || 'background.m4a';
+        await idbPutTrack({ id, name, size: oldBlob.size || 0, blob: oldBlob });
+        await idbDelAudio('background');
+        // перенастроить audioSource, если он указывал на старый файл
+        if (audioSource && audioSource.type === 'file' && !audioSource.id) {
+          audioSource = { type: 'file', id, name };
+          save(KEY.audioSource, audioSource);
+        }
+      }
+    } catch (e) {}
+  }
+
+  /* ---- треки: загрузка ---- */
+  async function loadTracks() {
+    try {
+      const list = await idbAllTracks();
+      tracks = list
+        .map(t => ({ id: t.id, name: t.name, size: t.size || 0 }))
+        .sort((a,b) => a.name.localeCompare(b.name, 'ru'));
+    } catch (e) { tracks = []; }
+    renderTracks();
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    const mb = bytes / (1024*1024);
+    return mb >= 1 ? mb.toFixed(1) + ' МБ' : Math.round(bytes/1024) + ' КБ';
+  }
+
+  function renderTracks() {
+    tracksListEl.innerHTML = '';
+    if (!tracks.length) {
+      tracksListEl.innerHTML = '<p class="hint" style="margin:4px 0">Файлов пока нет. Добавьте m4a/mp3.</p>';
+      return;
+    }
+    tracks.forEach(function (t) {
+      const row = document.createElement('div');
+      row.className = 'track-row';
+      row.dataset.id = t.id;
+
+      const playing = audioSource && audioSource.type === 'file' && audioSource.id === t.id && isPlaying;
+      const selected = audioSource && audioSource.type === 'file' && audioSource.id === t.id;
+
+      const name = document.createElement('span');
+      name.className = 'track-name' + (playing || selected ? ' playing' : '');
+      name.textContent = t.name;
+
+      const size = document.createElement('span');
+      size.className = 'track-size';
+      size.textContent = fmtSize(t.size);
+
+      const btnPlay = document.createElement('button');
+      btnPlay.className = 'track-play';
+      btnPlay.textContent = playing ? '❚❚' : '▶︎';
+      btnPlay.setAttribute('aria-label', 'Играть');
+
+      const btnDel = document.createElement('button');
+      btnDel.className = 'track-del';
+      btnDel.textContent = '×';
+      btnDel.setAttribute('aria-label', 'Удалить');
+
+      row.appendChild(name); row.appendChild(size);
+      row.appendChild(btnPlay); row.appendChild(btnDel);
+      tracksListEl.appendChild(row);
+    });
+  }
+
+  function updateNowPlaying() {
+    let text = 'Ничего не выбрано';
+    let canPlay = false;
+
+    if (audioSource) {
+      if (audioSource.type === 'file') {
+        text = audioSource.name || 'Файл';
+        canPlay = true;
+      } else if (audioSource.type === 'noise') {
+        const labels = { rain:'Дождь', white:'Белый шум', brown:'Коричневый шум', tick:'Тиканье' };
+        text = labels[audioSource.id] || 'Шум';
+        canPlay = true;
+      }
+    }
+
+    nowPlayingEl.textContent = text;
+    btnAudioPlay.disabled = !canPlay;
+    btnAudioPlay.textContent = isPlaying ? '❚❚' : '▶︎';
+
+    // подсветка активной кнопки шума
+    document.querySelectorAll('.noise-grid button').forEach(function (b) {
+      const active = audioSource && audioSource.type === 'noise' && audioSource.id === b.dataset.noise && isPlaying;
+      b.classList.toggle('active', active);
+    });
+  }
+
+  /* ---- воспроизведение файла ---- */
+  async function playFile() {
+    if (!audioSource || audioSource.type !== 'file' || !audioSource.id) return;
+    const rec = await idbGetTrack(audioSource.id);
+    if (!rec || !rec.blob) { updateNowPlaying(); return; }
+
+    if (currentUrl) { URL.revokeObjectURL(currentUrl); currentUrl = null; }
+    currentUrl = URL.createObjectURL(rec.blob);
+    bgAudio.src = currentUrl;
+    bgAudio.volume = volume;
+
+    stopNoise();
+
+    try {
+      await bgAudio.play();
+      isPlaying = true;
+    } catch (e) {
+      isPlaying = false;
+    }
+    updateNowPlaying(); renderTracks();
+  }
+
+  /* ---- генераторы шума ---- */
+  function createNoiseBuffer(ctx, type) {
+    const sr = ctx.sampleRate;
+    const len = sr * 3;
+    const buf = ctx.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    if (type === 'white' || type === 'rain') {
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        if (type === 'rain') {
+          last = (last + 0.02 * w) / 1.02;
+          d[i] = last * 3.5;
+        } else {
+          d[i] = w;
+        }
+      }
+    } else if (type === 'brown') {
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        last = (last + 0.02 * w) / 1.02;
+        d[i] = last * 3.5;
+      }
+    }
+    return buf;
+  }
+
+  function startNoise(type) {
+    stopNoise();
+    const ctx = getAudio();
+    if (!ctx) return;
+
+    if (type === 'tick') {
+      const play = () => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'square';
+        o.frequency.value = 1200;
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(volume * 0.25, ctx.currentTime + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.1);
+      };
+      play();
+      tickTimer = setInterval(play, 1000);
+      noiseType = 'tick';
+      return;
+    }
+
+    const buf = createNoiseBuffer(ctx, type);
+    if (!buf) return;
+
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+
+    if (type === 'rain') {
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 500;
+      src.connect(filter); filter.connect(gain);
+    } else {
+      src.connect(gain);
+    }
+    gain.connect(ctx.destination);
+    src.start();
+
+    noiseSource = src;
+    noiseGain = gain;
+    noiseType = type;
+  }
+
+  function stopNoise() {
+    if (noiseSource) {
+      try { noiseSource.stop(); } catch(e){}
+      try { noiseSource.disconnect(); } catch(e){}
+      noiseSource = null;
+    }
+    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    noiseType = null;
+  }
+
+  /* ---- общий play/pause ---- */
+  async function playCurrent() {
+    if (!audioSource) return;
+    if (audioSource.type === 'file') {
+      await playFile();
+    } else if (audioSource.type === 'noise') {
+      bgAudio.pause();
+      stopNoise();
+      startNoise(audioSource.id);
+      isPlaying = true;
+      updateNowPlaying(); renderTracks();
+    }
+  }
+
+  function pauseCurrent() {
+    bgAudio.pause();
+    stopNoise();
+    isPlaying = false;
+    updateNowPlaying(); renderTracks();
+  }
+
+  btnAudioPlay.addEventListener('click', function () {
+    if (isPlaying) pauseCurrent();
+    else playCurrent();
+  });
+
+  btnAddTrack.addEventListener('click', () => trackFileInput.click());
+
+  trackFileInput.addEventListener('change', async function (e) {
+    const files = Array.from(e.target.files || []);
+    for (const f of files) {
+      const id = 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      try {
+        await idbPutTrack({ id, name: f.name, size: f.size, blob: f });
+      } catch (err) {}
+    }
+    trackFileInput.value = '';
+    await loadTracks();
+  });
+
+  tracksListEl.addEventListener('click', async function (e) {
+    const row = e.target.closest('.track-row');
+    if (!row) return;
+    const id = row.dataset.id;
+    const t = tracks.find(x => x.id === id);
+    if (!t) return;
+
+    if (e.target.classList.contains('track-del')) {
+      if (!confirm('Удалить трек «' + t.name + '»?')) return;
+      await idbDelTrack(id);
+      if (audioSource && audioSource.type === 'file' && audioSource.id === id) {
+        pauseCurrent();
+        audioSource = null; save(KEY.audioSource, null);
+      }
+      await loadTracks(); updateNowPlaying();
+      return;
+    }
+
+    // выбираем трек (play/pause если он же)
+    if (audioSource && audioSource.type === 'file' && audioSource.id === id) {
+      if (isPlaying) pauseCurrent(); else await playCurrent();
+    } else {
+      pauseCurrent();
+      audioSource = { type: 'file', id, name: t.name };
+      save(KEY.audioSource, audioSource);
+      await playCurrent();
+    }
+  });
+
+  document.querySelectorAll('.noise-grid button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const type = b.dataset.noise;
+      if (audioSource && audioSource.type === 'noise' && audioSource.id === type) {
+        if (isPlaying) pauseCurrent(); else playCurrent();
+      } else {
+        pauseCurrent();
+        audioSource = { type: 'noise', id: type };
+        save(KEY.audioSource, audioSource);
+        playCurrent();
+      }
+    });
+  });
+
+  audioVolume.addEventListener('input', function () {
+    volume = audioVolume.value / 100;
+    bgAudio.volume = volume;
+    if (noiseGain) noiseGain.gain.value = volume;
+    localStorage.setItem(KEY.volume, String(volume));
+  });
+
+  bgAudio.addEventListener('play', () => { isPlaying = true; updateNowPlaying(); renderTracks(); });
+  bgAudio.addEventListener('pause', () => {
+    // pause мог быть вызван извне - но мы управляем сами
+    if (!noiseSource) { isPlaying = false; updateNowPlaying(); renderTracks(); }
+  });
+  bgAudio.addEventListener('ended', () => { isPlaying = false; updateNowPlaying(); renderTracks(); });
+
+  /* ---- инициализация звука ---- */
+  async function initSound() {
+    await migrateOldAudio();
+    await loadTracks();
+    updateNowPlaying();
+
+    // если выбран трек из старого сохранения — восстановить без автоплея
+    if (audioSource && audioSource.type === 'file' && audioSource.id) {
+      const rec = await idbGetTrack(audioSource.id);
+      if (!rec) { audioSource = null; save(KEY.audioSource, null); }
+    }
+    updateNowPlaying();
+  }
+
+  /* ============================================================
+     стартовое состояние
+     ============================================================ */
+  setMode('work', true);
+  renderTasks();
+  updateStats();
+  render();
+  initSound();
+
+})();
+</script>
+</body>
+</html>
